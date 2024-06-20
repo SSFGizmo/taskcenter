@@ -30,6 +30,7 @@ use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageQueue;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Page\PageRenderer;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Core\Utility\PathUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
@@ -42,12 +43,12 @@ use TYPO3\CMS\Taskcenter\TaskInterface;
 class TaskModuleController
 {
     /**
-     * Loaded with the global array $MCONF which holds some module configuration from the conf.php file of backend modules.
+     * Loaded with the global array $mConf which holds some module configuration from the conf.php file of backend modules.
      *
      * @see init()
      * @var array
      */
-    protected $MCONF = [];
+    protected array $mConf = [];
 
     /**
      * The integer value of the GET/POST var, 'id'. Used for submodules to the 'Web' module (page id)
@@ -55,7 +56,9 @@ class TaskModuleController
      * @see init()
      * @var int
      */
-    protected $id;
+    protected int $id;
+
+    protected array $set = [];
 
     /**
      * The module menu items array. Each key represents a key for which values can range between the items in the array of that key.
@@ -63,18 +66,18 @@ class TaskModuleController
      * @see init()
      * @var array
      */
-    protected $MOD_MENU = [
+    protected array $modMenu = [
         'function' => [],
     ];
 
     /**
-     * Current settings for the keys of the MOD_MENU array
+     * Current settings for the keys of the modMenu array
      * Public since task objects use this.
      *
-     * @see $MOD_MENU
+     * @see $modMenu
      * @var array
      */
-    public $MOD_SETTINGS = [];
+    public array $modSettings = [];
 
     /**
      * Module TSconfig based on PAGE TSconfig / USER TSconfig
@@ -83,7 +86,7 @@ class TaskModuleController
      * @see menuConfig()
      * @var array
      */
-    public $modTSconfig;
+    public array $modTSconfig;
 
     /**
      * If type is 'ses' then the data is stored as session-lasting data. This means that it'll be wiped out the next time the user logs in.
@@ -92,51 +95,51 @@ class TaskModuleController
      * @see menuConfig(), \TYPO3\CMS\Backend\Utility\BackendUtility::getModuleData()
      * @var string
      */
-    protected $modMenu_type = '';
+    protected string $modMenuType = '';
 
     /**
-     * dontValidateList can be used to list variables that should not be checked if their value is found in the MOD_MENU array. Used for dynamically generated menus.
+     * dontValidateList can be used to list variables that should not be checked if their value is found in the modMenu array. Used for dynamically generated menus.
      * Can be set from extension classes of this class before the init() function is called.
      *
      * @see menuConfig(), \TYPO3\CMS\Backend\Utility\BackendUtility::getModuleData()
      * @var string
      */
-    protected $modMenu_dontValidateList = '';
+    protected string $modMenuDontValidateList = '';
 
     /**
-     * List of default values from $MOD_MENU to set in the output array (only if the values from MOD_MENU are not arrays)
+     * List of default values from $modMenu to set in the output array (only if the values from modMenu are not arrays)
      * Can be set from extension classes of this class before the init() function is called.
      *
      * @see menuConfig(), \TYPO3\CMS\Backend\Utility\BackendUtility::getModuleData()
      * @var string
      */
-    protected $modMenu_setDefaultList = '';
+    protected string $modMenuSetDefaultList = '';
 
     /**
      * Generally used for accumulating the output content of backend modules
      *
      * @var string
      */
-    protected $content = '';
+    protected string $content = '';
 
     /**
      * @var array
      */
-    protected $pageinfo;
+    protected array $pageinfo;
 
     /**
      * ModuleTemplate Container
      *
      * @var ModuleTemplate
      */
-    protected $moduleTemplate;
+    protected ModuleTemplate $moduleTemplate;
 
     /**
      * The name of the module
      *
      * @var string
      */
-    protected $moduleName = 'user_task';
+    protected string $moduleName = 'user_task';
 
     protected ModuleTemplateFactory $moduleTemplateFactory;
     protected UriBuilder $uriBuilder;
@@ -151,60 +154,66 @@ class TaskModuleController
         $this->uriBuilder = $uriBuilder;
         $this->pageRenderer = $pageRenderer;
         $this->getLanguageService()->includeLLFile('EXT:taskcenter/Resources/Private/Language/locallang_task.xlf');
-        $this->MCONF = [
+        $this->mConf = [
             'name' => $this->moduleName,
         ];
         // Name might be set from outside
-        if (!$this->MCONF['name']) {
-            $this->MCONF = $GLOBALS['MCONF'];
+        if (!$this->mConf['name']) {
+            $this->mConf = $GLOBALS['MCONF'];
         }
-        $this->id = (int)GeneralUtility::_GP('id');
-        $this->menuConfig();
     }
 
     /**
-     * Adds items to the ->MOD_MENU array. Used for the function menu selector.
+     * Adds items to the ->modMenu array. Used for the function menu selector.
      */
-    protected function menuConfig()
+    protected function menuConfig(): void
     {
-        $this->MOD_MENU = ['mode' => []];
+        $this->modMenu = ['mode' => []];
         $languageService = $this->getLanguageService();
-        $this->MOD_MENU['mode']['information'] = $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang.xlf:task_overview');
-        $this->MOD_MENU['mode']['tasks'] = $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang.xlf:task_tasks');
+        $this->modMenu['mode']['information'] = $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang.xlf:task_overview');
+        $this->modMenu['mode']['tasks'] = $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang.xlf:task_tasks');
         // Copied from parent::menuConfig, because parent is hardcoded to menu.function,
         // however menu.function is already used for the individual tasks. Therefore we use menu.mode here.
         // Page/be_user TSconfig settings and blinding of menu-items
         $this->modTSconfig['properties'] = BackendUtility::getPagesTSconfig($this->id)['mod.'][$this->moduleName . '.'] ?? [];
-        $this->MOD_MENU['mode'] = $this->mergeExternalItems($this->MCONF['name'], 'mode', $this->MOD_MENU['mode']);
+        $this->modMenu['mode'] = $this->mergeExternalItems($this->mConf['name'], 'mode', $this->modMenu['mode']);
         $blindActions = $this->modTSconfig['properties']['menu.']['mode.'] ?? [];
         foreach ($blindActions as $key => $value) {
-            if (!$value && array_key_exists($key, $this->MOD_MENU['mode'])) {
-                unset($this->MOD_MENU['mode'][$key]);
+            if (!$value && array_key_exists($key, $this->modMenu['mode'])) {
+                unset($this->modMenu['mode'][$key]);
             }
         }
         // Page / user TSconfig settings and blinding of menu-items
         // Now overwrite the stuff again for unknown reasons
-        $this->modTSconfig['properties'] = BackendUtility::getPagesTSconfig($this->id)['mod.'][$this->MCONF['name'] . '.'] ?? [];
-        $this->MOD_MENU['function'] = $this->mergeExternalItems($this->MCONF['name'], 'function', $this->MOD_MENU['function'] ?? null);
+        $this->modTSconfig['properties'] = BackendUtility::getPagesTSconfig($this->id)['mod.'][$this->mConf['name'] . '.'] ?? [];
+        $this->modMenu['function'] = $this->mergeExternalItems($this->mConf['name'], 'function', $this->modMenu['function'] ?? []);
         $blindActions = $this->modTSconfig['properties']['menu.']['function.'] ?? [];
         foreach ($blindActions as $key => $value) {
-            if (!$value && array_key_exists($key, $this->MOD_MENU['function'])) {
-                unset($this->MOD_MENU['function'][$key]);
+            if (!$value && array_key_exists($key, $this->modMenu['function'])) {
+                unset($this->modMenu['function'][$key]);
             }
         }
-        $this->MOD_SETTINGS = BackendUtility::getModuleData($this->MOD_MENU, GeneralUtility::_GP('SET'), $this->MCONF['name'], $this->modMenu_type, $this->modMenu_dontValidateList, $this->modMenu_setDefaultList);
+
+        $this->modSettings = BackendUtility::getModuleData(
+            $this->modMenu,
+            $this->set,
+            $this->mConf['name'],
+            $this->modMenuType,
+            $this->modMenuDontValidateList,
+            $this->modMenuSetDefaultList
+        );
     }
 
     /**
-     * Generates the menu based on $this->MOD_MENU
+     * Generates the menu based on $this->modMenu
      *
      * @throws \InvalidArgumentException
      */
-    protected function generateMenu()
+    protected function generateMenu(): void
     {
         $menu = $this->moduleTemplate->getDocHeaderComponent()->getMenuRegistry()->makeMenu();
         $menu->setIdentifier('WebFuncJumpMenu');
-        foreach ($this->MOD_MENU['mode'] as $controller => $title) {
+        foreach ($this->modMenu['mode'] as $controller => $title) {
             $item = $menu
                 ->makeMenuItem()
                 ->setHref(
@@ -219,7 +228,7 @@ class TaskModuleController
                     )
                 )
                 ->setTitle($title);
-            if ($controller === $this->MOD_SETTINGS['mode']) {
+            if ($controller === $this->modSettings['mode']) {
                 $item->setActive(true);
             }
             $menu->addMenuItem($item);
@@ -236,9 +245,13 @@ class TaskModuleController
      */
     public function mainAction(ServerRequestInterface $request): ResponseInterface
     {
+        $this->id = (int)($request->getQueryParams()['id'] ?? $request->getParsedBody()['id'] ?? 0);
+        $this->set = $request->getQueryParams()['SET'] ?? [];
         $this->moduleTemplate = $this->moduleTemplateFactory->create($request);
+        $this->menuConfig();
         $this->main();
         $this->moduleTemplate->setContent($this->content);
+        //@TODO https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/12.0/Feature-96730-SimplifiedExtbackendModuleTemplateAPI.html
         return new HtmlResponse($this->moduleTemplate->renderContent());
     }
 
@@ -246,29 +259,27 @@ class TaskModuleController
      * Creates the module's content. In this case it rather acts as a kind of #
      * dispatcher redirecting requests to specific tasks.
      */
-    protected function main()
+    protected function main(): void
     {
         $this->getButtons();
         $this->generateMenu();
 
         // Render content depending on the mode
-        $mode = (string)$this->MOD_SETTINGS['mode'];
+        $mode = (string)$this->modSettings['mode'];
         if ($mode === 'information') {
             $this->renderInformationContent();
         } else {
             $this->renderModuleContent();
         }
-        // Renders the module page
-        $this->moduleTemplate->setTitle($this->getLanguageService()->getLL('title'));
     }
 
     /**
      * Generates the module content by calling the selected task
      */
-    protected function renderModuleContent()
+    protected function renderModuleContent(): void
     {
         $languageService = $this->getLanguageService();
-        $chosenTask = (string)$this->MOD_SETTINGS['function'];
+        $chosenTask = (string)$this->modSettings['function'];
         // Render the taskcenter task as default
         if (empty($chosenTask) || $chosenTask === 'index') {
             $chosenTask = 'taskcenter.tasks';
@@ -286,18 +297,18 @@ class TaskModuleController
                 } else {
                     $flashMessage = GeneralUtility::makeInstance(
                         FlashMessage::class,
-                        $languageService->getLL('error-access'),
-                        $languageService->getLL('error_header'),
-                        AbstractMessage::ERROR
+                        $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_task.xlf:error-access'),
+                        $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_task.xlf:error_header'),
+                        ContextualFeedbackSeverity::ERROR
                     );
                 }
             } else {
                 // Error if the task is not an instance of \TYPO3\CMS\Taskcenter\TaskInterface
                 $flashMessage = GeneralUtility::makeInstance(
                     FlashMessage::class,
-                    sprintf($languageService->getLL('error_no-instance'), $taskClass, TaskInterface::class),
-                    $languageService->getLL('error_header'),
-                    AbstractMessage::ERROR
+                    sprintf($languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_task.xlf:error_no-instance'), $taskClass, TaskInterface::class),
+                    $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_task.xlf:error_header'),
+                    ContextualFeedbackSeverity::ERROR
                 );
             }
         } else {
@@ -305,7 +316,7 @@ class TaskModuleController
                 FlashMessage::class,
                 $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_mod.xlf:mlang_labels_tabdescr'),
                 $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_mod.xlf:mlang_tabs_tab'),
-                AbstractMessage::INFO
+                ContextualFeedbackSeverity::INFO
             );
         }
 
@@ -334,7 +345,7 @@ class TaskModuleController
     /**
      * Generates the information content
      */
-    protected function renderInformationContent()
+    protected function renderInformationContent(): void
     {
         $assigns = [];
         $assigns['LLPrefix'] = 'LLL:EXT:taskcenter/Resources/Private/Language/locallang.xlf:';
@@ -361,7 +372,7 @@ class TaskModuleController
      * @param string $description Description
      * @return string formatted title and description
      */
-    public function description($title, $description = '')
+    public function description(string $title, string $description = ''): string
     {
         $descriptionView = GeneralUtility::makeInstance(StandaloneView::class);
         $descriptionView->setTemplatePathAndFilename(GeneralUtility::getFileAbsFileName(
@@ -386,7 +397,7 @@ class TaskModuleController
      * @param bool $mainMenu Set it to TRUE to render the main menu
      * @return string Formatted definition list
      */
-    public function renderListMenu($items, $mainMenu = false)
+    public function renderListMenu(array $items, bool $mainMenu = false): string
     {
         $assigns = [];
         $assigns['mainMenu'] = $mainMenu;
@@ -406,14 +417,12 @@ class TaskModuleController
             }
         }
         if (is_array($items) && !empty($items)) {
-            foreach ($items as $itemKey => &$item) {
+            foreach ($items as &$item) {
                 // Check for custom icon
-                if (!empty($item['icon'])) {
-                    if (strpos($item['icon'], '<img ') === false) {
-                        $iconFile = GeneralUtility::getFileAbsFileName($item['icon']);
-                        if (@is_file($iconFile)) {
-                            $item['iconFile'] = PathUtility::getAbsoluteWebPath($iconFile);
-                        }
+                if (!empty($item['icon']) && (strpos($item['icon'], '<img ') === false)) {
+                    $iconFile = GeneralUtility::getFileAbsFileName($item['icon']);
+                    if (@is_file($iconFile)) {
+                        $item['iconFile'] = PathUtility::getAbsoluteWebPath($iconFile);
                     }
                 }
                 $id = $this->getUniqueKey($item['uid']);
@@ -431,7 +440,7 @@ class TaskModuleController
                     $item['collapsed'] = 'show';
                 }
                 // Active menu item
-                $panelState = (string)$this->MOD_SETTINGS['function'] == $item['uid'] ? 'bg-dark' : 'bg-default';
+                $panelState = (string)$this->modSettings['function'] == $item['uid'] ? 'bg-dark' : 'bg-default';
                 $item['panelState'] = $panelState;
             }
         }
@@ -451,7 +460,7 @@ class TaskModuleController
      *
      * @return string List of available reports
      */
-    protected function indexAction()
+    protected function indexAction(): string
     {
         $languageService = $this->getLanguageService();
         $content = '';
@@ -490,9 +499,9 @@ class TaskModuleController
         } else {
             $flashMessage = GeneralUtility::makeInstance(
                 FlashMessage::class,
-                $languageService->getLL('no-tasks'),
+                $languageService->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_task.xlf:no-tasks'),
                 '',
-                AbstractMessage::INFO
+                ContextualFeedbackSeverity::INFO
             );
             /** @var FlashMessageService $flashMessageService */
             $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
@@ -507,14 +516,15 @@ class TaskModuleController
      * Create the panel of buttons for submitting the form or otherwise
      * perform operations.
      */
-    protected function getButtons()
+    protected function getButtons(): void
     {
         $buttonBar = $this->moduleTemplate->getDocHeaderComponent()->getButtonBar();
 
         // Shortcut
         $shortcutButton = $buttonBar->makeShortcutButton()
-            ->setModuleName($this->moduleName)
-            ->setSetVariables(['function']);
+            ->setRouteIdentifier('user_task')
+            ->setDisplayName($this->getLanguageService()->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_mod.xlf:mlang_tabs_tab'));
+
         $buttonBar->addButton($shortcutButton);
     }
 
@@ -528,7 +538,7 @@ class TaskModuleController
      * @param string $taskClass Name of the task
      * @return bool Access to the task allowed or not
      */
-    protected function checkAccess($extKey, $taskClass): bool
+    protected function checkAccess(string $extKey, string $taskClass): bool
     {
         $backendUser = $this->getBackendUser();
         // Admins are always allowed
@@ -550,7 +560,7 @@ class TaskModuleController
      * @param string $string string which is used to generate the identifier
      * @return string Modified string
      */
-    protected function getUniqueKey($string)
+    protected function getUniqueKey(string $string): string
     {
         $search = ['.', '_'];
         $replace = ['-', ''];
@@ -592,14 +602,14 @@ class TaskModuleController
      *
      * @param string $modName Module name for which to find value
      * @param string $menuKey Menu key, eg. 'function' for the function menu.
-     * @param array $menuArr The part of a MOD_MENU array to work on.
+     * @param array $menuArr The part of a modMenu array to work on.
      * @return array Modified array part.
      * @internal
      * @see \TYPO3\CMS\Core\Utility\ExtensionManagementUtility::insertModuleFunction(), menuConfig()
      */
-    protected function mergeExternalItems($modName, $menuKey, $menuArr)
+    protected function mergeExternalItems(string $modName, string $menuKey, array $menuArr): array
     {
-        $mergeArray = $GLOBALS['TBE_MODULES_EXT'][$modName]['MOD_MENU'][$menuKey] ?? false;
+        $mergeArray = $GLOBALS['TBE_MODULES_EXT'][$modName]['modMenu'][$menuKey] ?? false;
         if (is_array($mergeArray)) {
             foreach ($mergeArray as $k => $v) {
                 if (((string)$v['ws'] === '' || $this->getBackendUser()->workspace === 0 && GeneralUtility::inList($v['ws'], 'online')) || $this->getBackendUser()->workspace === -1 && GeneralUtility::inList($v['ws'], 'offline') || $this->getBackendUser()->workspace > 0 && GeneralUtility::inList($v['ws'], 'custom')) {

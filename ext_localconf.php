@@ -1,6 +1,8 @@
 <?php
 
-defined('TYPO3') or die();
+declare(strict_types=1);
+
+defined('TYPO3') || die();
 
 if (\TYPO3\CMS\Core\Utility\ExtensionManagementUtility::isLoaded('impexp')) {
     $GLOBALS['TYPO3_CONF_VARS']['SC_OPTIONS']['taskcenter']['impexp'][\TYPO3\CMS\Taskcenter\Task\ImportExportTask::class] = [

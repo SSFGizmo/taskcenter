@@ -74,7 +74,7 @@ class ImportExportTask implements TaskInterface
      *
      * @return string Overview as HTML
      */
-    public function getOverview()
+    public function getOverview(): string
     {
         return '';
     }
@@ -96,7 +96,10 @@ class ImportExportTask implements TaskInterface
         } else {
             // Header
             $lang = $this->getLanguageService();
-            $content .= $this->taskObject->description($lang->getLL('.alttitle'), $lang->getLL('.description'));
+            $content .= $this->taskObject->description(
+                $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:.alttitle'),
+                $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:.description')
+            );
             $clause = $this->getBackendUser()->getPagePermsClause(Permission::PAGE_SHOW);
             $usernames = BackendUtility::getUserNames();
             // Create preset links:
@@ -111,23 +114,23 @@ class ImportExportTask implements TaskInterface
                     $description = [];
                     // Is public?
                     if ($presetCfg['public']) {
-                        $description[] = $lang->getLL('task.public') . ': ' . $lang->sL('LLL:EXT:core/Resources/Private/Language/locallang_common.xlf:yes');
+                        $description[] = $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:task.public') . ': ' . $lang->sL('LLL:EXT:core/Resources/Private/Language/locallang_common.xlf:yes');
                     }
                     // Owner
-                    $description[] = $lang->getLL('task.owner') . ': '
+                    $description[] = $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:task.owner') . ': '
                         . (
                             $presetCfg['user_uid'] === $GLOBALS['BE_USER']->user['uid']
-                            ? $lang->getLL('task.own')
+                            ? $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:task.own')
                             : '[' . htmlspecialchars($usernames[$presetCfg['user_uid']]['username']) . ']'
                         );
                     // Page & path
                     if ($configuration['pagetree']['id']) {
-                        $description[] = $lang->getLL('task.page') . ': ' . $configuration['pagetree']['id'];
-                        $description[] = $lang->getLL('task.path') . ': ' . htmlspecialchars(
+                        $description[] = $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:task.page') . ': ' . $configuration['pagetree']['id'];
+                        $description[] = $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:task.path') . ': ' . htmlspecialchars(
                             BackendUtility::getRecordPath($configuration['pagetree']['id'], $clause, 20)
                         );
                     } else {
-                        $description[] = $lang->getLL('single-record');
+                        $description[] = $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:single-record');
                     }
                     // Meta information
                     if ($configuration['meta']['title'] || $configuration['meta']['description'] || $configuration['meta']['notes']) {
@@ -140,8 +143,8 @@ class ImportExportTask implements TaskInterface
                         }
                         if ($configuration['meta']['notes']) {
                             $metaInformation .= '<br /><br />
-												<strong>' . $lang->getLL('notes') . ': </strong>
-												<em>' . htmlspecialchars($configuration['meta']['notes']) . '</em>';
+                                                <strong>' . $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:notes') . ': </strong>
+                                                <em>' . htmlspecialchars($configuration['meta']['notes']) . '</em>';
                         }
                         $description[] = '<br />' . $metaInformation;
                     }
@@ -161,8 +164,8 @@ class ImportExportTask implements TaskInterface
                 // No presets found
                 $flashMessage = GeneralUtility::makeInstance(
                     FlashMessage::class,
-                    $lang->getLL('no-presets'),
-                    $lang->getLL('.alttitle'),
+                    $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:no-presets'),
+                    $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:.alttitle'),
                     AbstractMessage::NOTICE
                 );
                 /** @var FlashMessageService $flashMessageService */
