@@ -17,5 +17,11 @@ return [
                 'target' => TaskModuleController::class . '::mainAction',
             ],
         ],
+        'moduleData' => [
+            'SET' => [
+                'function' => '',
+                'mode' => '',
+            ],
+        ],
     ],
 ];

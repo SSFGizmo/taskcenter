@@ -18,6 +18,7 @@ namespace TYPO3\CMS\Taskcenter\Controller;
  */
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Backend\Module\ModuleData;
 use TYPO3\CMS\Backend\Routing\UriBuilder;
 use TYPO3\CMS\Backend\Template\ModuleTemplate;
 use TYPO3\CMS\Backend\Template\ModuleTemplateFactory;
@@ -42,6 +43,8 @@ use TYPO3\CMS\Taskcenter\TaskInterface;
  */
 class TaskModuleController
 {
+    protected ?ModuleData $moduleData = null;
+
     /**
      * Loaded with the global array $mConf which holds some module configuration from the conf.php file of backend modules.
      *
@@ -58,8 +61,6 @@ class TaskModuleController
      */
     protected int $id;
 
-    protected array $set = [];
-
     /**
      * The module menu items array. Each key represents a key for which values can range between the items in the array of that key.
      *
@@ -71,15 +72,6 @@ class TaskModuleController
     ];
 
     /**
-     * Current settings for the keys of the modMenu array
-     * Public since task objects use this.
-     *
-     * @see $modMenu
-     * @var array
-     */
-    public array $modSettings = [];
-
-    /**
      * Module TSconfig based on PAGE TSconfig / USER TSconfig
      * Public since task objects use this.
      *
@@ -89,43 +81,11 @@ class TaskModuleController
     public array $modTSconfig;
 
     /**
-     * If type is 'ses' then the data is stored as session-lasting data. This means that it'll be wiped out the next time the user logs in.
-     * Can be set from extension classes of this class before the init() function is called.
-     *
-     * @see menuConfig(), \TYPO3\CMS\Backend\Utility\BackendUtility::getModuleData()
-     * @var string
-     */
-    protected string $modMenuType = '';
-
-    /**
-     * dontValidateList can be used to list variables that should not be checked if their value is found in the modMenu array. Used for dynamically generated menus.
-     * Can be set from extension classes of this class before the init() function is called.
-     *
-     * @see menuConfig(), \TYPO3\CMS\Backend\Utility\BackendUtility::getModuleData()
-     * @var string
-     */
-    protected string $modMenuDontValidateList = '';
-
-    /**
-     * List of default values from $modMenu to set in the output array (only if the values from modMenu are not arrays)
-     * Can be set from extension classes of this class before the init() function is called.
-     *
-     * @see menuConfig(), \TYPO3\CMS\Backend\Utility\BackendUtility::getModuleData()
-     * @var string
-     */
-    protected string $modMenuSetDefaultList = '';
-
-    /**
      * Generally used for accumulating the output content of backend modules
      *
      * @var string
      */
     protected string $content = '';
-
-    /**
-     * @var array
-     */
-    protected array $pageinfo;
 
     /**
      * ModuleTemplate Container
@@ -148,7 +108,10 @@ class TaskModuleController
     /**
      * Initializes the Module
      */
-    public function __construct(ModuleTemplateFactory $moduleTemplateFactory, UriBuilder $uriBuilder, PageRenderer $pageRenderer)
+    public function __construct(
+        ModuleTemplateFactory $moduleTemplateFactory,
+        UriBuilder $uriBuilder,
+        PageRenderer $pageRenderer)
     {
         $this->moduleTemplateFactory = $moduleTemplateFactory;
         $this->uriBuilder = $uriBuilder;
@@ -193,15 +156,6 @@ class TaskModuleController
                 unset($this->modMenu['function'][$key]);
             }
         }
-
-        $this->modSettings = BackendUtility::getModuleData(
-            $this->modMenu,
-            $this->set,
-            $this->mConf['name'],
-            $this->modMenuType,
-            $this->modMenuDontValidateList,
-            $this->modMenuSetDefaultList
-        );
     }
 
     /**
@@ -228,7 +182,7 @@ class TaskModuleController
                     )
                 )
                 ->setTitle($title);
-            if ($controller === $this->modSettings['mode']) {
+            if ($controller === $this->moduleData->get('SET')['mode']) {
                 $item->setActive(true);
             }
             $menu->addMenuItem($item);
@@ -246,7 +200,7 @@ class TaskModuleController
     public function mainAction(ServerRequestInterface $request): ResponseInterface
     {
         $this->id = (int)($request->getQueryParams()['id'] ?? $request->getParsedBody()['id'] ?? 0);
-        $this->set = $request->getQueryParams()['SET'] ?? [];
+        $this->moduleData = $request->getAttribute('moduleData');
         $this->moduleTemplate = $this->moduleTemplateFactory->create($request);
         $this->menuConfig();
         $this->main();
@@ -265,7 +219,7 @@ class TaskModuleController
         $this->generateMenu();
 
         // Render content depending on the mode
-        $mode = (string)$this->modSettings['mode'];
+        $mode = (string)$this->moduleData->get('SET')['mode'];
         if ($mode === 'information') {
             $this->renderInformationContent();
         } else {
@@ -279,7 +233,7 @@ class TaskModuleController
     protected function renderModuleContent(): void
     {
         $languageService = $this->getLanguageService();
-        $chosenTask = (string)$this->modSettings['function'];
+        $chosenTask = (string)$this->moduleData->get('SET')['function'];
         // Render the taskcenter task as default
         if (empty($chosenTask) || $chosenTask === 'index') {
             $chosenTask = 'taskcenter.tasks';
@@ -397,7 +351,9 @@ class TaskModuleController
      * @param bool $mainMenu Set it to TRUE to render the main menu
      * @return string Formatted definition list
      */
-    public function renderListMenu(array $items, bool $mainMenu = false): string
+    public function renderListMenu(
+        array $items,
+        bool $mainMenu = false): string
     {
         $assigns = [];
         $assigns['mainMenu'] = $mainMenu;
@@ -440,7 +396,7 @@ class TaskModuleController
                     $item['collapsed'] = 'show';
                 }
                 // Active menu item
-                $panelState = (string)$this->modSettings['function'] == $item['uid'] ? 'bg-dark' : 'bg-default';
+                $panelState = (string)$this->moduleData->get('SET')['function'] == $item['uid'] ? 'bg-dark' : 'bg-default';
                 $item['panelState'] = $panelState;
             }
         }

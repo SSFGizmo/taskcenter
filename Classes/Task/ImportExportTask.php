@@ -222,7 +222,7 @@ class ImportExportTask implements TaskInterface
             )
             ->orderBy('item_uid', 'DESC')
             ->addOrderBy('title')
-            ->execute()
+            ->executeQuery()
             ->fetchAllAssociative();
     }
 
