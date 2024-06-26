@@ -21,12 +21,12 @@ use TYPO3\CMS\Backend\Utility\BackendUtility;
 use TYPO3\CMS\Core\Authentication\BackendUserAuthentication;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Localization\LanguageService;
-use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessage;
 use TYPO3\CMS\Core\Messaging\FlashMessageQueue;
 use TYPO3\CMS\Core\Messaging\FlashMessageService;
 use TYPO3\CMS\Core\Resource\Exception;
 use TYPO3\CMS\Core\Resource\Folder;
+use TYPO3\CMS\Core\Type\ContextualFeedbackSeverity;
 use TYPO3\CMS\Core\Type\Bitmask\Permission;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 use TYPO3\CMS\Fluid\View\StandaloneView;
@@ -166,7 +166,7 @@ class ImportExportTask implements TaskInterface
                     FlashMessage::class,
                     $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:no-presets'),
                     $lang->sL('LLL:EXT:taskcenter/Resources/Private/Language/locallang_csh.xlf:.alttitle'),
-                    AbstractMessage::NOTICE
+                    ContextualFeedbackSeverity::NOTICE
                 );
                 /** @var FlashMessageService $flashMessageService */
                 $flashMessageService = GeneralUtility::makeInstance(FlashMessageService::class);
@@ -209,7 +209,7 @@ class ImportExportTask implements TaskInterface
         return $queryBuilder->select('*')
             ->from('tx_impexp_presets')
             ->where(
-                $queryBuilder->expr()->orX(
+                $queryBuilder->expr()->or(
                     $queryBuilder->expr()->gt(
                         'public',
                         $queryBuilder->createNamedParameter(0, \PDO::PARAM_INT)
