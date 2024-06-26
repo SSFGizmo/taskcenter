@@ -87,13 +87,13 @@ class ImportExportTask implements TaskInterface
     public function main(): string
     {
         $content = '';
-        $id = (int)GeneralUtility::_GP('display');
-        /** @var UriBuilder $uriBuilder */
-        $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
+        $id = (int)($this->taskObject->getRequest()?->getQueryParams()['display'] ?? 0);
         // If a preset is found, it is rendered using an iframe
         if ($id > 0) {
             return $this->renderLoadForm($id);
         } else {
+            /** @var UriBuilder $uriBuilder */
+            $uriBuilder = GeneralUtility::makeInstance(UriBuilder::class);
             // Header
             $lang = $this->getLanguageService();
             $content .= $this->taskObject->description(

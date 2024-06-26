@@ -42,6 +42,7 @@ use TYPO3\CMS\Taskcenter\TaskInterface;
  */
 class TaskModuleController
 {
+    protected ?ServerRequestInterface $request = null;
     protected ?ModuleData $moduleData = null;
 
     /**
@@ -125,6 +126,10 @@ class TaskModuleController
         }
     }
 
+    public function getRequest(): ?ServerRequestInterface {
+        return $this->request;
+    }
+
     /**
      * Adds items to the ->modMenu array. Used for the function menu selector.
      */
@@ -198,6 +203,7 @@ class TaskModuleController
      */
     public function mainAction(ServerRequestInterface $request): ResponseInterface
     {
+        $this->request = $request;
         $this->id = (int)($request->getQueryParams()['id'] ?? $request->getParsedBody()['id'] ?? 0);
         $this->moduleData = $request->getAttribute('moduleData');
         $this->moduleTemplate = $this->moduleTemplateFactory->create($request);
