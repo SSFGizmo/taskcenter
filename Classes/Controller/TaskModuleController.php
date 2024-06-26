@@ -16,6 +16,7 @@ namespace TYPO3\CMS\Taskcenter\Controller;
  *
  * The TYPO3 project - inspiring people to share!
  */
+use Psr\Http\Message\ResponseFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use TYPO3\CMS\Backend\Module\ModuleData;
@@ -43,6 +44,7 @@ use TYPO3\CMS\Taskcenter\TaskInterface;
 class TaskModuleController
 {
     protected ?ServerRequestInterface $request = null;
+    protected ?ResponseFactoryInterface $responseFactory = null;
     protected ?ModuleData $moduleData = null;
 
     /**
@@ -111,11 +113,13 @@ class TaskModuleController
     public function __construct(
         ModuleTemplateFactory $moduleTemplateFactory,
         UriBuilder $uriBuilder,
-        PageRenderer $pageRenderer)
+        PageRenderer $pageRenderer,
+        ResponseFactoryInterface $responseFactory)
     {
         $this->moduleTemplateFactory = $moduleTemplateFactory;
         $this->uriBuilder = $uriBuilder;
         $this->pageRenderer = $pageRenderer;
+        $this->responseFactory = $responseFactory;
         $this->getLanguageService()->includeLLFile('EXT:taskcenter/Resources/Private/Language/locallang_task.xlf');
         $this->mConf = [
             'name' => $this->moduleName,
@@ -126,8 +130,14 @@ class TaskModuleController
         }
     }
 
-    public function getRequest(): ?ServerRequestInterface {
+    public function getRequest(): ?ServerRequestInterface
+    {
         return $this->request;
+    }
+
+    public function getResponseFactory(): ?ResponseFactoryInterface
+    {
+        return $this->responseFactory;
     }
 
     /**
