@@ -46,6 +46,7 @@ class TaskModuleController
     protected ?ServerRequestInterface $request = null;
     protected ?ResponseFactoryInterface $responseFactory = null;
     protected ?ModuleData $moduleData = null;
+    protected array $modSettings = [];
 
     /**
      * Loaded with the global array $mConf which holds some module configuration from the conf.php file of backend modules.
@@ -138,6 +139,16 @@ class TaskModuleController
     public function getResponseFactory(): ?ResponseFactoryInterface
     {
         return $this->responseFactory;
+    }
+
+    public function getModSettings(): array
+    {
+        return $this->modSettings;
+    }
+    
+    public function setModSettings(array $modSettings): void
+    {
+        $this->modSettings = $modSettings;
     }
 
     /**
