@@ -28,9 +28,15 @@
         <div id="{item.contentId}" data-taskcenter-id="{item.uniqueKey}" class="panel">
             <div class="panel-heading {item.panelState}">
                 <div class="panel-heading-right">
-                    <a href="#task_content_{item.contentId}" class="panel-header-collapse t3js-taskcenter-header-collapse" role="button" data-bs-toggle="collapse" data-uid="{item.contentId}" aria-expanded="{item.ariaExpanded}">
-                        <core:icon identifier="{item.collapseIcon}" />
-                    </a>
+                    <button
+                        type="button"
+                        class="btn btn-default btn-sm float-end t3js-toggle-table"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#task_content_{item.contentId}"
+                        aria-expanded="{f:if(condition: item.ariaExpanded, then: 'false', else: 'true')}"
+                    >
+                        <core:icon identifier="{f:if(condition: item.ariaExpanded, then: 'actions-view-list-expand', else: 'actions-view-list-collapse')}" size="small" />
+                    </button>
                 </div>
                 <div class="panel-heading-left">
                     <a href="{item.link}" class="panel-title">
@@ -53,7 +59,7 @@
                     </a>
                 </div>
             </div>
-            <div id="task_content_{item.contentId}" class="panel-collapse collapse t3js-taskcenter-collapse {item.collapsed}" aria-expanded="true">
+            <div class="panel-collapse collapse {f:if(condition: '{item.collapsed}', then: 'show')}" id="task_content_{item.contentId}" data-table="task_content_{item.contentId}">
                 <div class="panel-body">
                     <f:if condition="{item.descriptionHtml}">
                         <f:then>
