@@ -411,7 +411,7 @@ class TaskModuleController
                     $item['collapsed'] = 'show';
                 }
                 // Active menu item
-                $panelState = (string)$this->moduleData->get('SET')['function'] == $item['uid'] ? 'bg-dark' : 'bg-default';
+                $panelState = (string)$this->moduleData->get('SET')['function'] == $item['uid'] ? 'bg-info' : 'bg-default';
                 $item['panelState'] = $panelState;
             }
         }
